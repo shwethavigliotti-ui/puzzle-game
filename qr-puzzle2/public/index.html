@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR-Rotate Пазл 🔄</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #a0a0a0;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat span {
+            color: #00d2ff;
+            font-weight: bold;
+            font-size: 1.4rem;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 16px;
+            box-shadow: 0 0 40px rgba(0,210,255,0.2);
+        }
+
+        .tile {
+            width: 80px;
+            height: 80px;
+            background-size: 320px 320px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid transparent;
+        }
+
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0,210,255,0.5);
+        }
+
+        .tile.selected {
+            border-color: #00d2ff;
+            box-shadow: 0 0 20px rgba(0,210,255,0.6);
+            transform: scale(1.08);
+            z-index: 2;
+        }
+
+        .tile.correct-pos {
+            border-color: #ffaa00;
+            box-shadow: 0 0 10px rgba(255,170,0,0.4);
+        }
+
+        .tile.correct-full {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0,255,136,0.5);
+        }
+
+        .tile-rotation-indicator {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.5);
+            background: rgba(0,0,0,0.6);
+            padding: 2px 5px;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 28px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,210,255,0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0,210,255,0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: transparent;
+            color: #888;
+        }
+
+        .mode-btn.active {
+            background: rgba(0,210,255,0.2);
+            color: #00d2ff;
+            box-shadow: 0 0 10px rgba(0,210,255,0.2);
+        }
+
+        .instruction {
+            color: #888;
+            font-size: 0.95rem;
+            margin-top: 5px;
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 340px;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d2ff, #00ff88);
+            transition: width 0.5s ease;
+            border-radius: 3px;
+        }
+
+        /* Сообщение о победе — под пазлом, не перекрывает QR */
+        .win-message {
+            text-align: center;
+            padding: 12px 30px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(0,255,136,0.3);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+
+        .win-message.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .win-message h2 {
+            font-size: 1.4rem;
+            color: #00ff88;
+            margin-bottom: 4px;
+        }
+
+        .win-message p {
+            color: #ccc;
+            font-size: 0.95rem;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            position: absolute;
+            animation: fall linear forwards;
+            z-index: 100;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
+        @media (max-width: 480px) {
+            .tile { width: 65px; height: 65px; }
+            #board { gap: 2px; padding: 6px; }
+            h1 { font-size: 1.8rem; }
+            .controls { gap: 10px; }
+            button { padding: 10px 20px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔄 QR-Rotate Пазл</h1>
+    <p class="subtitle">Поворачивай и меняй плитки местами, чтобы собрать QR-код</p>
+
+    <div class="game-container">
+        <div class="stats">
+            <div class="stat">Ходы: <span id="moves">0</span></div>
+            <div class="stat">Позиция: <span id="posCorrect">0</span>/16</div>
+            <div class="stat">Поворот: <span id="rotCorrect">0</span>/16</div>
+            <div class="stat">Время: <span id="timer">00:00</span></div>
+        </div>
+
+        <div id="board"></div>
+        
+        <!-- Сообщение о победе — под пазлом, QR-код полностью виден -->
+        <div class="win-message" id="winMessage">
+            <h2>🎉 QR-код собран!</h2>
+            <p>Отсканируй его, чтобы узнать секрет!</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="modeRotate" onclick="setMode('rotate')">🔄 Повернуть</button>
+            <button class="mode-btn" id="modeSwap" onclick="setMode('swap')">⇄ Поменять</button>
+        </div>
+
+        <p class="instruction" id="instruction">Кликни на плитку, чтобы повернуть её на 90° по часовой стрелке</p>
+
+        <div class="controls">
+            <button class="btn-primary" onclick="newGame()">🔄 Новая игра</button>
+            <button class="btn-secondary" onclick="toggleHints()">💡 Подсказки</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        const GRID_SIZE = 4;
+        const TOTAL_TILES = GRID_SIZE * GRID_SIZE;
+        
+        let gameId = null;
+        let board = [];
+        let selectedTile = null;
+        let mode = 'rotate';
+        let moves = 0;
+        let timerInterval;
+        let seconds = 0;
+        let showHints = false;
+        let gameStarted = false;
+        let isWon = false;
+        let qrVersion = 0; // Текущая версия QR
+
+        async function newGame() {
+            gameStarted = false;
+            isWon = false;
+            moves = 0;
+            seconds = 0;
+            qrVersion = 0;
+            document.getElementById('moves').textContent = '0';
+            document.getElementById('timer').textContent = '00:00';
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('winMessage').classList.remove('active');
+            clearInterval(timerInterval);
+            selectedTile = null;
+            
+            try {
+                const res = await fetch(`${API_URL}/new-game`, { method: 'POST' });
+                if (!res.ok) throw new Error('Network error');
+                const data = await res.json();
+                
+                gameId = data.gameId;
+                board = data.board.map((originalIndex, position) => ({
+                    originalIndex,
+                    rotation: data.rotations[position]
+                }));
+                
+                renderBoard();
+                updateStats();
+                updateHints();
+                
+                gameStarted = true;
+                startTimer();
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Ошибка загрузки. Перезагрузи страницу.');
+            }
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            
+            const allTiles = [];
+            for (let i = 0; i < TOTAL_TILES; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.dataset.originalIndex = i;
+                
+                const row = Math.floor(i / GRID_SIZE);
+                const col = i % GRID_SIZE;
+                
+                // Добавляем версию QR для инвалидации кеша
+                tile.style.backgroundImage = `url('${API_URL}/qr/${gameId}?v=${qrVersion}')`;
+                tile.style.backgroundPosition = `-${col * 80}px -${row * 80}px`;
+                
+                const rotIndicator = document.createElement('span');
+                rotIndicator.className = 'tile-rotation-indicator';
+                tile.appendChild(rotIndicator);
+                
+                tile.addEventListener('click', handleTileClick);
+                allTiles.push(tile);
+            }
+            
+            for (let i = 0; i < TOTAL_TILES; i++) {
+                const originalIndex = board[i].originalIndex;
+                const tile = allTiles[originalIndex];
+                const rotation = board[i].rotation;
+                
+                tile.style.transform = `rotate(${rotation * 90}deg)`;
+                tile.querySelector('.tile-rotation-indicator').textContent = `${rotation * 90}°`;
+                boardEl.appendChild(tile);
+            }
+        }
+
+        async function sendMove(index1, index2, isRotate) {
+            const res = await fetch(`${API_URL}/move`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gameId, index1, index2, isRotate })
+            });
+            return await res.json();
+        }
+
+        async function handleTileClick(event) {
+            if (!gameStarted || isWon) return;
+            
+            const clickedTile = event.currentTarget;
+            const boardEl = document.getElementById('board');
+            const tiles = Array.from(boardEl.children);
+            const clickedIndex = tiles.indexOf(clickedTile);
+            
+            let result;
+            
+            if (mode === 'rotate') {
+                board[clickedIndex].rotation = (board[clickedIndex].rotation + 1) % 4;
+                clickedTile.style.transform = `rotate(${board[clickedIndex].rotation * 90}deg)`;
+                clickedTile.querySelector('.tile-rotation-indicator').textContent = `${board[clickedIndex].rotation * 90}°`;
+                
+                result = await sendMove(clickedIndex, null, true);
+                moves++;
+            } else {
+                if (selectedTile === clickedTile) {
+                    clickedTile.classList.remove('selected');
+                    selectedTile = null;
+                    return;
+                }
+                
+                if (!selectedTile) {
+                    selectedTile = clickedTile;
+                    clickedTile.classList.add('selected');
+                    return;
+                }
+                
+                const selectedIndex = tiles.indexOf(selectedTile);
+                
+                const next1 = selectedTile.nextSibling;
+                if (next1 === clickedTile) {
+                    boardEl.insertBefore(clickedTile, selectedTile);
+                } else {
+                    const next2 = clickedTile.nextSibling;
+                    boardEl.insertBefore(selectedTile, next2);
+                    boardEl.insertBefore(clickedTile, next1);
+                }
+                
+                [board[selectedIndex], board[clickedIndex]] = [board[clickedIndex], board[selectedIndex]];
+                
+                result = await sendMove(selectedIndex, clickedIndex, false);
+                
+                selectedTile.classList.remove('selected');
+                selectedTile = null;
+                moves++;
+            }
+            
+            document.getElementById('moves').textContent = moves;
+            updateStats();
+            updateHints();
+            
+            if (result && (result.won || result.solved)) {
+                isWon = true;
+                gameStarted = false;
+                clearInterval(timerInterval);
+                
+                // Обновляем версию QR и перерисовываем доску с новым URL
+                qrVersion = result.qrVersion || 1;
+                renderBoard();
+                
+                setTimeout(showWinMessage, 300);
+            }
+        }
+
+        function updateStats() {
+            let posCorrect = 0;
+            let rotCorrect = 0;
+            
+            for (let i = 0; i < TOTAL_TILES; i++) {
+                if (board[i].originalIndex === i) posCorrect++;
+                if (board[i].rotation === 0) rotCorrect++;
+            }
+            
+            document.getElementById('posCorrect').textContent = posCorrect;
+            document.getElementById('rotCorrect').textContent = rotCorrect;
+            
+            const totalProgress = (posCorrect + rotCorrect) / (TOTAL_TILES * 2) * 100;
+            document.getElementById('progressFill').style.width = `${totalProgress}%`;
+        }
+
+        function updateHints() {
+            if (!showHints) {
+                document.querySelectorAll('.tile').forEach(tile => {
+                    tile.classList.remove('correct-pos', 'correct-full');
+                });
+                return;
+            }
+            
+            const tiles = document.querySelectorAll('.tile');
+            tiles.forEach((tile, position) => {
+                tile.classList.remove('correct-pos', 'correct-full');
+                
+                const correctPos = board[position].originalIndex === position;
+                const correctRot = board[position].rotation === 0;
+                
+                if (correctPos && correctRot) {
+                    tile.classList.add('correct-full');
+                } else if (correctPos) {
+                    tile.classList.add('correct-pos');
+                }
+            });
+        }
+
+        function setMode(newMode) {
+            mode = newMode;
+            document.getElementById('modeRotate').classList.toggle('active', mode === 'rotate');
+            document.getElementById('modeSwap').classList.toggle('active', mode === 'swap');
+            
+            const instruction = document.getElementById('instruction');
+            if (mode === 'rotate') {
+                instruction.textContent = 'Кликни на плитку, чтобы повернуть её на 90° по часовой стрелке';
+            } else {
+                instruction.textContent = 'Выбери две плитки, чтобы поменять их местами';
+            }
+            
+            if (selectedTile) {
+                selectedTile.classList.remove('selected');
+                selectedTile = null;
+            }
+        }
+
+        function toggleHints() {
+            showHints = !showHints;
+            updateHints();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                seconds++;
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function showWinMessage() {
+            document.getElementById('winMessage').classList.add('active');
+            createConfetti();
+        }
+
+        function createConfetti() {
+            const colors = ['#00d2ff', '#3a7bd5', '#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 5000);
+            }
+        }
+
+        newGame();
+    </script>
+
+</body>
+</html>

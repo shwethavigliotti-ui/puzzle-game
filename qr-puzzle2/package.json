@@ -1,0 +1,7 @@
+{
+  "name": "qr-puzzle",
+  "dependencies": {
+    "qrcode": "^1.5.3",
+    "uuid": "^9.0.0"
+  }
+}
